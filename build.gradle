@@ -4,10 +4,15 @@ import static org.opendatakit.aggregate.gradle.Util.getVersionName
 buildscript {
   repositories {
     jcenter()
+    maven { url="https://repo.cuba-platform.com/content/groups/work/" }
+    flatDir {
+      dirs 'libs' // Tell Gradle to look for JARs in the 'libs' directory
+    }
   }
   dependencies {
     classpath 'de.richsource.gradle.plugins:gwt-gradle-plugin:0.6'
-    classpath "com.avast.gradle:gradle-docker-compose-plugin:0.6.8"
+    //classpath "com.avast.gradle:gradle-docker-compose-plugin:0.6.8"
+    classpath name: 'gradle-docker-compose-plugin', version: '0.6.8'
   }
 }
 
@@ -18,6 +23,7 @@ plugins {
   id 'idea'
   id 'checkstyle'
   id 'de.fuerstenau.buildconfig' version '1.1.8'
+  id("com.avast.gradle.docker-compose") version "0.6.8"
 }
 apply plugin: 'gwt'
 apply from: 'https://raw.github.com/akhikhl/gretty/master/pluginScripts/gretty.plugin'

@@ -16,9 +16,13 @@
 
 package org.opendatakit.aggregate.servlet;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.opendatakit.aggregate.ContextFactory;
@@ -87,6 +91,28 @@ public class AggregateHtmlServlet extends ServletUtilBase {
    */
   private static final long serialVersionUID = 5811797423869654357L;
 
+  private static StringBuilder readContentHtml(CallingContext cc, String fileNamePath) {
+    Path htmlFilePath = Paths.get(cc.getServletContext().getRealPath("/"), fileNamePath);
+    String filePath = htmlFilePath.toString();
+    StringBuilder content = new StringBuilder();
+    BufferedReader reader = null;
+
+    try {
+      reader = new BufferedReader(new FileReader(filePath));
+      String line;
+      while ((line = reader.readLine()) != null) {
+        content.append(line).append("\n");
+      }
+    } catch (IOException e) {
+      System.out.println("<html><head><title>Error</title></head><body>");
+      System.out.println("<h1>Error reading HTML file</h1>");
+      System.out.println("<p>Error details: " + e.getMessage() + "</p>");
+      System.out.println("</body></html>");
+    }
+
+    return content;
+  }
+
   @Override
   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws
       IOException {
@@ -96,7 +122,7 @@ public class AggregateHtmlServlet extends ServletUtilBase {
 
     String newUrl = cc.getServerURL() + BasicConsts.FORWARDSLASH + ADDR;
     String query = req.getQueryString();
-    if (query != null && query.length() != 0) {
+    if (query != null && !query.isEmpty()) {
       newUrl += "?" + query;
     }
     if (userService.getCurrentRealm().getCheckHostnames()) {
@@ -151,11 +177,17 @@ public class AggregateHtmlServlet extends ServletUtilBase {
     resp.setCharacterEncoding(HtmlConsts.UTF8_ENCODE);
     resp.addHeader(HtmlConsts.X_FRAME_OPTIONS, HtmlConsts.X_FRAME_SAMEORIGIN);
     PrintWriter out = resp.getWriter();
-    out.print(PAGE_CONTENTS_FIRST);
+    StringBuilder PAGE_CONTENTS_FIRST_TEMP = readContentHtml(cc, "templates\\header.html");
+    if (PAGE_CONTENTS_FIRST_TEMP.toString().isEmpty()) {
+      out.print(PAGE_CONTENTS_FIRST);
+    } else {
+      out.print(PAGE_CONTENTS_FIRST_TEMP);
+    }
+
     String simpleApiKey;
     try {
       simpleApiKey = ServerPreferencesProperties.getGoogleSimpleApiKey(cc);
-      if (simpleApiKey != null && simpleApiKey.length() != 0) {
+      if (simpleApiKey != null && !simpleApiKey.isEmpty()) {
         out.print("key=" + encodeParameter(simpleApiKey) + "&amp;");
       }
     } catch (ODKEntityNotFoundException e) {
@@ -165,7 +197,13 @@ public class AggregateHtmlServlet extends ServletUtilBase {
       e.printStackTrace();
       logger.info("Unable to access Map APIKey");
     }
-    out.print(PAGE_CONTENTS_SECOND);
+
+    StringBuilder PAGE_CONTENTS_SECOND_TEMP = readContentHtml(cc, "templates\\footer.html");
+    if (PAGE_CONTENTS_SECOND_TEMP.toString().isEmpty()) {
+      out.print(PAGE_CONTENTS_SECOND);
+    } else {
+      out.print(PAGE_CONTENTS_SECOND_TEMP);
+    }
   }
 
 }
